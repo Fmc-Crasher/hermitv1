@@ -41,10 +41,10 @@ Module({
     use: 'edit',
     desc: 'Changes sticker/audio pack & author name. Title, artist, thumbnail etc.'
 }, (async (m, match) => {
-    if (!m.reply_message.data.quotedMessage) return await m.sendMessage('_Reply to an audio or a sticker_')
+    if (!m.reply_message) return await m.sendMessage('_Reply to an audio or a sticker_')
     var audiomsg = m.reply_message.audio;
     var stickermsg = m.reply_message.sticker;
-    var q = await saveMessage(m.reply_message);
+    var q = await m.reply_message.download();
     if (stickermsg) {
         if (match[1]!=="") {
         var exif = {
@@ -68,7 +68,7 @@ Module({
     if (!stickermsg && audiomsg) {
                 let inf = match[1] !== '' ? match[1] : AUDIO_DATA
                 var spl = inf.split(';')
-                var image = spl[2]?await skbuffer(spl[2]): BOT_INFO.split(";")[3]
+                var image = spl[2] ? await skbuffer(spl[2]): await skbuffer(BOT_INFO.split(";")[3])
                 var res = await addInfo(q,spl[0],spl[1]?spl[1]:AUDIO_DATA.split(";")[1], 'Raganork Engine', image)
                 await m.client.sendMessage(m.jid, {
                     audio: res,
@@ -90,7 +90,7 @@ Module({
     desc: 'Converts animated sticker to video'
 }, (async (m, t) => {
     if (m.reply_message.sticker) {
-        var q = await saveMessage(m.reply_message);
+        var q = await m.reply_message.download();
         try {
             var result = await webp2mp4(q)
         } catch {

@@ -32,7 +32,7 @@ Module({
     fromMe: w,
     desc: Lang.STICKER_DESC
 }, (async (message, match) => {
-    if (message.reply_message === false) return await message.sendMessage(Lang.STICKER_NEED_REPLY)
+    if (message.reply_message === false) return await message.send(Lang.STICKER_NEED_REPLY)
     var savedFile = await message.reply_message.download();
     var exif = {
         author: STICKER_DATA.split(";")[1] || "",
@@ -54,6 +54,8 @@ Module({
     desc: Lang.MP3_DESC
 }, (async (message, match) => {
     if (message.reply_message === false) return await message.sendReply(Lang.MP3_NEED_REPLY)
+    var {seconds} = message.quoted.message[Object.keys(message.quoted.message)[0]];
+    if (seconds>120) await message.sendReply(`_Alert: Duration more than 2 mins. This process may fail or take much more time!_`)
     var savedFile = await message.reply_message.download();
     ffmpeg(savedFile)
         .save('./temp/tomp3.mp3')
@@ -91,7 +93,7 @@ Module({
     use: 'edit',
     desc: Lang.PHOTO_DESC
 }, (async (message, match) => {
-    if (message.reply_message === false) return await message.sendMessage(Lang.PHOTO_NEED_REPLY)
+    if (message.reply_message === false) return await message.send(Lang.PHOTO_NEED_REPLY)
         var savedFile = await message.reply_message.download();
         ffmpeg(savedFile)
             .fromFormat('webp_pipe')
@@ -107,6 +109,18 @@ Module({
     use: 'utility',
     desc: "Text to animated sticker"
 }, (async (message, match) => {
-    if (match[1] == '') return await message.sendMessage("*Need text*")
-     await message.sendReply(await skbuffer("https://api.xteam.xyz/attp?file&text="+encodeURI(match[1])), 'sticker');      
+    if (match[1] == '') return await message.send("*Need text*")
+    try { var result = await skbuffer("https://api.xteam.xyz/attp?file&text="+encodeURI(match[1]))
+    return await message.sendReply(result,'sticker');
+    } catch {var result = await skbuffer("https://raganork-api.herokuapp.com/api/attp?text="+encodeURI(match[1] +"&apikey=with_love_souravkl11"))} 
+    fs.writeFile("attp.mp4",result,async (e)=>{
+        var exif = {
+            author: STICKER_DATA.split(";")[1] || "",
+            packname: message.senderName,
+            categories: STICKER_DATA.split(";")[2] || "😂",
+            android: "https://github.com/souravkl11/Raganork-md/",
+            ios: "https://github.com/souravkl11/Raganork-md/"
+        }
+        await message.send(fs.readFileSync(await addExif(await sticker("attp.mp4",'video'),exif)),'sticker')
+    })
 }));

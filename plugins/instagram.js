@@ -41,7 +41,7 @@ Module({
     usage: 'insta link or reply to a link',
     use: 'download'
 }, (async (msg, query) => {
-     var q = !msg.reply_message.message ? query[1] : msg.reply_message.message
+     var q = query[1] || msg.reply_message?.text
      if (q && (q.startsWith('l') || q.includes('youtu'))) return;
     if (!q) return await msg.sendReply("*Need instagram link*")
     if (q.includes("stories")) return await msg.sendReply("*Use .story command!*")
@@ -53,10 +53,11 @@ Module({
     var getid = /(?:https?:\/\/)?(?:www\.)?(?:instagram\.com(?:\/.+?)?\/(p|reel|tv)\/)([\w-]+)(?:\/)?(\?.*)?$/
     var url = getid.exec(q)
     if (url != null) {
-        var res = await downloadGram(url[0])
+        try { var res = await downloadGram(url[0]) } catch { return await msg.sendReply("_Broken link! Try another one._") }
         if (res == false) return await msg.sendReply("*Download failed*");
+        var quoted = msg.reply_message ? msg.quoted : msg.data
         for (var i in res) {
-        await msg.sendReply({url:res[i]}, res[i].includes("mp4")?'video':'image')
+        await msg.client.sendMessage(msg.jid,{[res[i].includes("mp4")?'video':'image']:{url:res[i]}},{quoted})
         };
     }
 }));
@@ -150,9 +151,10 @@ Module({
     if (/\bhttps?:\/\/\S+/gi.test(user)) user = user.match(/\bhttps?:\/\/\S+/gi)[0]
     try { var res = await pin(user) } catch {return await msg.sendReply("*Server error*")}
     await msg.sendMessage('_Downloading ' + res.data.length + ' medias_');
-    for (var i in res){
-        var type = res.data[i].url.includes("mp4") ? "video" : "image"
-        await msg.sendReply({url:res.data[i].url },type)
+    var quoted = msg.reply_message ? msg.quoted : msg.data
+    for (var i of res.data){
+        var type = i.url.includes("mp4") ? "video" : "image"
+        await msg.client.sendMessage(msg.jid,{[type]:{url:i.url }},{quoted})
     }
 }));
 Module({
